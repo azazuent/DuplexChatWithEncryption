@@ -47,12 +47,16 @@ void wait_recv(int *fd)
     while(1)
     {
         memset(recvbuf, 0, MAX_DATA_SIZE);
-        if (msg_length = recv(*fd, recvbuf, MAX_DATA_SIZE-1, 0) == -1)
+        if (msg_length = recv(*fd, recvbuf, MAX_DATA_SIZE, 0) == -1)
         {
             perror("recv");
             exit(1);
         }
-        recvbuf[msg_length] = '\0';
+        if (recvbuf[0] == '\0')
+        {
+            printf("Client disconnected, exiting...\n");
+            exit(0);
+        }
         printf("Received: %s", recvbuf);
     }
 }
