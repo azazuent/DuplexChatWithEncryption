@@ -11,7 +11,7 @@
 #include <openssl/des.h>
 #include <openssl/err.h>
 
-#define MAX_DATA_SIZE 1024
+#define MAX_DATA_SIZE 128
 #define KEY_FILE_NAME "des_key.bin"
 
 // get sockaddr, IPv4 or IPv6:
@@ -45,7 +45,6 @@ int encryptDES(char* buf, char* enc_buf)
 
     DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)enc_buf, &schedule, DES_ENCRYPT);
     //printf("String encoded successfully\n");
-    strcpy(buf, enc_buf);
     return 0;
 }
 
@@ -70,7 +69,6 @@ int decryptDES(char* buf, char* dec_buf)
 
     DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)dec_buf, &schedule, DES_DECRYPT);
     //printf("String decoded successfully\n");
-    strcpy(buf, dec_buf);
     return 0;
 }
 
@@ -87,11 +85,11 @@ void wait_send(int *fd)
         if (strcmp(sendbuf, "\n") == 0)
             continue;
 
-        if (encryptDES(sendbuf, sendbuf_enc) != 0)
-        {
-            printf("Failed to encrypt message:\n");
-            continue;
-        }
+        // if (encryptDES(sendbuf, sendbuf_enc) != 0)
+        // {
+        //     printf("Failed to encrypt message:\n");
+        //     continue;
+        // }
         printf("Original strlen: %lu\n", strlen(sendbuf));
         printf("New strlen: %lu\n", strlen(sendbuf_enc));
         printf("Sizeof: %lu\n", sizeof(sendbuf_enc));
