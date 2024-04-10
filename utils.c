@@ -85,16 +85,16 @@ void wait_send(int *fd)
         if (strcmp(sendbuf, "\n") == 0)
             continue;
 
-        // if (encryptDES(sendbuf, sendbuf_enc) != 0)
-        // {
-        //     printf("Failed to encrypt message:\n");
-        //     continue;
-        // }
+        if (encryptDES(sendbuf, sendbuf_enc) != 0)
+        {
+            printf("Failed to encrypt message:\n");
+            continue;
+        }
         printf("Original strlen: %lu\n", strlen(sendbuf));
         printf("New strlen: %lu\n", strlen(sendbuf_enc));
         printf("Sizeof: %lu\n", sizeof(sendbuf_enc));
 
-        if (send(*fd, sendbuf, sizeof(sendbuf), 0) < 0)
+        if (send(*fd, sendbuf_enc, sizeof(sendbuf_enc), 0) < 0)
         {
             printf("Send failed\n");
             exit(1);
@@ -125,13 +125,13 @@ void wait_recv(int *fd)
             exit(0);
         }
 
-        // if (decryptDES(recvbuf, recvbuf_dec) != 0)
-        // {
-        //     printf("Failed to decrypt message\n");
-        //     continue;
-        // }
+        if (decryptDES(recvbuf, recvbuf_dec) != 0)
+        {
+            printf("Failed to decrypt message\n");
+            continue;
+        }
 
         printf("Size from recv: %ld from strlen: %lu\n", msg_length, strlen(recvbuf));
-        printf("Received: %s", recvbuf);
+        printf("Received: %s", recvbuf_dec);
     }
 }
