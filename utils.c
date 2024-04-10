@@ -24,7 +24,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int encryptDES(char* buf, char* enc_buf)
+int DES_crypto(const char* str, char* enc_str, int encrypt)
 {
     DES_cblock key;
     DES_key_schedule schedule;
@@ -38,39 +38,19 @@ int encryptDES(char* buf, char* enc_buf)
         return -1;
     }
     fclose(key_file);
-    //printf("Key read successfully\n");
 
     DES_set_key_unchecked(&key, &schedule);
-    //printf("Key set successfully\n");
 
-    DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)enc_buf, &schedule, DES_ENCRYPT);
-    //printf("String encoded successfully\n");
-    return 0;
-}
-
-int decryptDES(char* buf, char* dec_buf)
-{
-    DES_cblock key;
-    DES_key_schedule schedule;
-
-    FILE *key_file = fopen(KEY_FILE_NAME, "rb");
-    if (key_file == NULL) return -1;
-
-    if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
+    for (int i = 0; i < MAX_DATA_SIZE / 8; i++)
     {
-        fclose(key_file);
-        return -1;
+        const char *current_block = str + i * 8;
+        char *dest_block = enc_str + i * 8;
+        DES_ecb_encrypt((const_DES_cblock *)current_block, (DES_cblock *)dest_block, &schedule, encrypt);
+
     }
-    fclose(key_file);
-    //printf("Key read successfully\n");
-
-    DES_set_key_unchecked(&key, &schedule);
-    //printf("Key set successfully\n");
-
-    DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)dec_buf, &schedule, DES_DECRYPT);
-    //printf("String decoded successfully\n");
     return 0;
 }
+
 
 void wait_send(int *fd)
 {
@@ -85,16 +65,13 @@ void wait_send(int *fd)
         if (strcmp(sendbuf, "\n") == 0)
             continue;
 
-        if (encryptDES(sendbuf, sendbuf_enc) != 0)
+        if (DES_crypto(sendbuf, sendbuf_enc, DES_ENCRYPT) != 0)
         {
             printf("Failed to encrypt message:\n");
             continue;
         }
-        printf("Original strlen: %lu\n", strlen(sendbuf));
-        printf("New strlen: %lu\n", strlen(sendbuf_enc));
-        printf("Sizeof: %lu\n", sizeof(sendbuf_enc));
 
-        if (send(*fd, sendbuf_enc, sizeof(sendbuf_enc), 0) < 0)
+        if (send(*fd, sendbuf_enc, MAX_DATA_SIZE, 0) < 0)
         {
             printf("Send failed\n");
             exit(1);
@@ -125,13 +102,12 @@ void wait_recv(int *fd)
             exit(0);
         }
 
-        if (decryptDES(recvbuf, recvbuf_dec) != 0)
+        if (DES_crypto(recvbuf, recvbuf_dec, DES_DECRYPT) != 0)
         {
             printf("Failed to decrypt message\n");
             continue;
         }
 
-        printf("Size from recv: %ld from strlen: %lu\n", msg_length, strlen(recvbuf));
         printf("Received: %s", recvbuf_dec);
     }
 }
