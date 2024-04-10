@@ -45,7 +45,6 @@ int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
         const char *current_block = str + i * 8;
         char *dest_block = enc_str + i * 8;
         DES_ecb_encrypt((const_DES_cblock *)current_block, (DES_cblock *)dest_block, &schedule, encrypt);
-
     }
     return 0;
 }
