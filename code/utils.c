@@ -19,8 +19,6 @@
 #define MAX_DATA_SIZE 256
 #define KEY_FILE_NAME "des_key.bin"
 
-const BIGNUM *DH_get0_pub_key(const DH *dh);
-
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -110,14 +108,4 @@ void wait_recv(int *fd, DES_cblock* key)
 
         printf("Received: %s", recvbuf_dec);
     }
-}
-
-DH *prepare_DH_key(char *key)
-{
-    DH *dh = DH_new();
-    DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0);
-    DH_generate_key(dh);
-
-    char *prepared_key = BN_bn2hex(DH_get0_pub_key(dh));
-    strcpy(key, prepared_key);
 }
