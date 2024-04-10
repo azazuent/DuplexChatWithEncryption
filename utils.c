@@ -11,7 +11,7 @@
 #include <openssl/des.h>
 #include <openssl/err.h>
 
-#define MAX_DATA_SIZE 128
+#define MAX_DATA_SIZE 1024
 #define KEY_FILE_NAME "des_key.bin"
 
 // get sockaddr, IPv4 or IPv6:
@@ -90,18 +90,13 @@ void wait_send(int *fd)
         if (encryptDES(sendbuf, sendbuf_enc) != 0)
         {
             printf("Failed to encrypt message:\n");
-            unsigned long err;
-            while ((err = ERR_get_error()) != 0) 
-            {
-                const char *error_string = ERR_reason_error_string(err);
-                if (error_string) {
-                    printf("OpenSSL Error: %s\n", error_string);
-                }
-            }
             continue;
         }
+        printf("Original strlen: %lu\n", strlen(sendbuf));
+        printf("New strlen: %lu\n", strlen(sendbuf_enc));
+        printf("Sizeof: %lu\n", sizeof(sendbuf_enc));
 
-        if (send(*fd, sendbuf_enc, strlen(sendbuf_enc), 0) < 0)
+        if (send(*fd, sendbuf_enc, sizeof(sendbuf_enc), 0) < 0)
         {
             printf("Send failed\n");
             exit(1);
@@ -114,7 +109,7 @@ void wait_recv(int *fd)
 {
     char recvbuf[MAX_DATA_SIZE];
     char recvbuf_dec[MAX_DATA_SIZE];
-    int msg_length;
+    ssize_t msg_length;
     while(1)
     {
         memset(recvbuf, 0, MAX_DATA_SIZE);
@@ -138,8 +133,7 @@ void wait_recv(int *fd)
             continue;
         }
 
-        //msg_length = strlen(recvbuf);
-        //recvbuf_dec[msg_length] = '\0';
+        printf("Size from recv: %ld from strlen: %lu\n", msg_length, strlen(recvbuf));
         printf("Received: %s", recvbuf_dec);
     }
 }
