@@ -2,12 +2,6 @@
 
 int main(int argc, char *argv[])
 {
-    // if (argc != 2)
-    // {
-    //     printf("Usage: %s port\n", basename(argv[0]));
-    //     exit(-1);
-    // }
-
     char *port = argv[1];
     char mode = argv[2][0];
 
@@ -53,8 +47,6 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(ai);
 
-    printf("Binding successfull\n");
-
     if(listen(listener, 1) == -1)
     {
         perror("listen");
@@ -83,7 +75,11 @@ int main(int argc, char *argv[])
         break;
     }
 
-    if (mode == '0') key = NULL;
+    if (mode == '0')
+    {
+        key = NULL;
+        printf("Chatting with no encryption, be careful!\n");
+    }
     else if (mode == '1')
     {
         FILE *key_file = fopen(KEY_FILE_NAME, "rb");
@@ -98,11 +94,13 @@ int main(int argc, char *argv[])
             printf("Couldn't read key from file\n");
             exit(-1);
         }
-
         fclose(key_file);
+        printf("Key read from %s, begin chatting!\n", KEY_FILE_NAME);
     }
     else if (mode == '2')
     {
+        printf("Performing Diffie-Hellmann key exchange...\n");
+
         char pub_key[256];
 
         DH* dh = DH_new();
@@ -120,6 +118,8 @@ int main(int argc, char *argv[])
 
         unsigned char* key = malloc(sizeof(dh));
         DH_compute_key((unsigned char*)key, bn_key, dh);
+
+        printf("Exchange successful, begin chatting!\n");
     }
 
     pid_t pid = fork();
