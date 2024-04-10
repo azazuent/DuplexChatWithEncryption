@@ -45,7 +45,7 @@ int encryptDES(char* buf, char* enc_buf)
 
     DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)enc_buf, &schedule, DES_ENCRYPT);
     //printf("String encoded successfully\n");
-
+    strcpy(buf, enc_buf);
     return 0;
 }
 
@@ -70,7 +70,7 @@ int decryptDES(char* buf, char* dec_buf)
 
     DES_ecb_encrypt((const_DES_cblock *)buf, (DES_cblock *)dec_buf, &schedule, DES_DECRYPT);
     //printf("String decoded successfully\n");
-
+    strcpy(buf, dec_buf);
     return 0;
 }
 
