@@ -112,10 +112,10 @@ void wait_recv(int *fd, DES_cblock* key)
     }
 }
 
-void prepare_DH_key(char *key)
+DH *prepare_DH_key(char *key)
 {
     DH *dh = DH_new();
-    int res = DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0);
+    DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0);
     DH_generate_key(dh);
 
     char *prepared_key = BN_bn2hex(DH_get0_pub_key(dh));
