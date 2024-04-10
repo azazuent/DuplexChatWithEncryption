@@ -1,17 +1,14 @@
 #include "utils.c"
 
 int main(int argc, char *argv[])
-{
-    if (argc != 3)
-    {
-        printf("Usage: %s hostname port\n", basename(argv[0]));
-        exit(-1);
-    }
-    
+{   
     int fd, rv;
 
-    char* hostname = argv[1];
-    char* port = argv[2];
+    char *hostname = argv[1];
+    char *port = argv[2];
+    char mode = argv[3][0];
+
+    DES_cblock *key = malloc(8);
 
     struct addrinfo hints, *srvinfo, *p;
     memset(&hints, 0, sizeof(hints));
@@ -50,6 +47,28 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(srvinfo);
 
+    if (mode == '0') key = NULL;
+    else if (mode == '1')
+    {
+        FILE *key_file = fopen(KEY_FILE_NAME, "rb");
+        if (key_file == NULL)
+        {
+            printf("Couldn't read key from file\n");
+            exit(-1);
+        }
+        if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
+        {
+            fclose(key_file);
+            printf("Couldn't read key from file\n");
+            exit(-1);
+        }
+        fclose(key_file);
+    }
+    else if (mode == '2')
+    {
+        
+    }
+
     int pid = fork();
 
     if (pid < 0)
@@ -59,9 +78,9 @@ int main(int argc, char *argv[])
     }
 
     if (pid == 0)
-        wait_send(&fd);
+        wait_send(&fd, key);
     else
-        wait_recv(&fd);
+        wait_recv(&fd, key);
 
     return 0;
 }

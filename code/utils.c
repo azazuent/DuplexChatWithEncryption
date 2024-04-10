@@ -8,13 +8,19 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #include <openssl/des.h>
 #include <openssl/err.h>
 
-#define MAX_DATA_SIZE 128
+#include <openssl/dh.h>
+#include <openssl/engine.h>
+#include <openssl/bn.h>
+
+#define MAX_DATA_SIZE 256
 #define KEY_FILE_NAME "des_key.bin"
 
-// get sockaddr, IPv4 or IPv6:
+const BIGNUM *DH_get0_pub_key(const DH *dh);
+
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -24,22 +30,17 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int DES_crypto(const char* str, char* enc_str, int encrypt)
+int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
 {
-    DES_cblock key;
+    if (key == NULL)
+    {
+        strcpy(enc_str, str);
+        return 0;
+    }
+
     DES_key_schedule schedule;
 
-    FILE *key_file = fopen(KEY_FILE_NAME, "rb");
-    if (key_file == NULL) return -1;
-
-    if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
-    {
-        fclose(key_file);
-        return -1;
-    }
-    fclose(key_file);
-
-    DES_set_key_unchecked(&key, &schedule);
+    DES_set_key_unchecked(key, &schedule);
 
     for (int i = 0; i < MAX_DATA_SIZE / 8; i++)
     {
@@ -51,8 +52,7 @@ int DES_crypto(const char* str, char* enc_str, int encrypt)
     return 0;
 }
 
-
-void wait_send(int *fd)
+void wait_send(int *fd, DES_cblock* key)
 {
     char sendbuf[MAX_DATA_SIZE];
     char sendbuf_enc[MAX_DATA_SIZE];
@@ -65,7 +65,7 @@ void wait_send(int *fd)
         if (strcmp(sendbuf, "\n") == 0)
             continue;
 
-        if (DES_crypto(sendbuf, sendbuf_enc, DES_ENCRYPT) != 0)
+        if (DES_crypto(sendbuf, sendbuf_enc, key, DES_ENCRYPT) != 0)
         {
             printf("Failed to encrypt message:\n");
             continue;
@@ -80,7 +80,7 @@ void wait_send(int *fd)
     }
 }
 
-void wait_recv(int *fd)
+void wait_recv(int *fd, DES_cblock* key)
 {
     char recvbuf[MAX_DATA_SIZE];
     char recvbuf_dec[MAX_DATA_SIZE];
@@ -102,7 +102,7 @@ void wait_recv(int *fd)
             exit(0);
         }
 
-        if (DES_crypto(recvbuf, recvbuf_dec, DES_DECRYPT) != 0)
+        if (DES_crypto(recvbuf, recvbuf_dec, key, DES_DECRYPT) != 0)
         {
             printf("Failed to decrypt message\n");
             continue;
@@ -110,4 +110,14 @@ void wait_recv(int *fd)
 
         printf("Received: %s", recvbuf_dec);
     }
+}
+
+void prepare_DH_key(char *key)
+{
+    DH *dh = DH_new();
+    int res = DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0);
+    DH_generate_key(dh);
+
+    char *prepared_key = BN_bn2hex(DH_get0_pub_key(dh));
+    strcpy(key, prepared_key);
 }

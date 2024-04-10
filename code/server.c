@@ -2,13 +2,16 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        printf("Usage: %s port\n", basename(argv[0]));
-        exit(-1);
-    }
+    // if (argc != 2)
+    // {
+    //     printf("Usage: %s port\n", basename(argv[0]));
+    //     exit(-1);
+    // }
 
-    char* port = argv[1];
+    char *port = argv[1];
+    char mode = argv[2][0];
+
+    DES_cblock *key = malloc(8);
 
     int listener;
     int yes = 1;
@@ -79,6 +82,30 @@ int main(int argc, char *argv[])
         close(listener);
         break;
     }
+
+    if (mode == '0') key = NULL;
+    else if (mode == '1')
+    {
+        FILE *key_file = fopen(KEY_FILE_NAME, "rb");
+        if (key_file == NULL)
+        {
+            printf("Couldn't read key from file\n");
+            exit(-1);
+        }
+        if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
+        {
+            fclose(key_file);
+            printf("Couldn't read key from file\n");
+            exit(-1);
+        }
+
+        fclose(key_file);
+    }
+    else if (mode == '2')
+    {
+        
+    }
+
     pid_t pid = fork();
         
     if (pid < 0)
@@ -88,9 +115,9 @@ int main(int argc, char *argv[])
     }
 
     if (pid == 0)
-        wait_send(&fd);
+        wait_send(&fd, key);
     else
-        wait_recv(&fd);
+        wait_recv(&fd, key);
 
     return 0;
 }
