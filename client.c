@@ -4,7 +4,8 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        printf("Usage: %s hostname port", basename(argv[0]));
+        printf("Usage: %s hostname port\n", basename(argv[0]));
+        exit(-1);
     }
     
     int fd, rv;
@@ -38,6 +39,7 @@ int main(int argc, char *argv[])
             continue;
         }
 
+        printf("Connection established\n");
         break;
     }
 
