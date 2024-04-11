@@ -28,6 +28,25 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+int read_key_from_file(DES_cblock* key, const char* file_name)
+{
+    FILE *key_file = fopen(file_name, "rb");
+    if (key_file == NULL)
+    {
+        printf("Couldn't read key from file\n");
+        return -1;
+    }
+    if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
+    {
+        fclose(key_file);
+        printf("Couldn't read key from file\n");
+        return -1;
+    }
+    fclose(key_file);
+
+    return 0;
+}
+
 int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
 {
     if (key == NULL)
@@ -37,7 +56,6 @@ int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
     }
 
     DES_key_schedule schedule;
-
     DES_set_key_unchecked(key, &schedule);
 
     for (int i = 0; i < MAX_DATA_SIZE / 8; i++)
@@ -46,6 +64,29 @@ int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
         char *dest_block = enc_str + i * 8;
         DES_ecb_encrypt((const_DES_cblock *)current_block, (DES_cblock *)dest_block, &schedule, encrypt);
     }
+    return 0;
+}
+
+int perform_dh_exchange(int* fd, unsigned char* key)
+{
+    DH* dh = DH_new();
+
+    if (DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0) != 1) return -1;
+    if (DH_generate_key(dh) != 1) return -1;
+
+    char* hex_key = BN_bn2hex(DH_get0_pub_key(dh));
+
+    send(*fd, hex_key, sizeof(hex_key), 0);
+    recv(*fd, hex_key, sizeof(hex_key), 0);
+
+    BIGNUM *bn_key = BN_new();
+    if (BN_hex2bn(&bn_key, hex_key) == 0) return -1;
+
+    if (DH_compute_key((unsigned char*)key, bn_key, dh) == -1) return -1;
+
+    DH_free(dh);
+    BN_free(bn_key);
+
     return 0;
 }
 
