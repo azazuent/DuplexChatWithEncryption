@@ -1,5 +1,5 @@
 # DuplexChatWithEncryption
-Full duplex chat in C supporting encrypting messages
+Full duplex chat in C that uses OpenSSL for message encryption.
 
 This chat supports three types of communication:
 1) No encryption
@@ -7,6 +7,3 @@ This chat supports three types of communication:
 3) DES encryption with a key generated through Diffie-Hellman key exchange
 
 Build with make
-
-Usage: server.sh <port> <-n/-des/-dh>
-       client.sh <hostname> <port> <-n/-des/-dh>
