@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
     char *port = argv[1];
     char mode = argv[2][0];
 
-    DES_cblock *key = malloc(8);
+    DES_cblock *key = malloc(sizeof(DES_cblock));
 
     int listener;
     int yes = 1;
@@ -89,9 +89,9 @@ int main(int argc, char *argv[])
     {
         printf("Performing Diffie-Hellmann key exchange...\n");
 
-        char* key = malloc(256);
-        perform_dh_exchange(&fd, (unsigned char *)key);
-
+        perform_dh_exchange(&fd, key);
+        
+        BIO_dump_fp(stdout, key, sizeof(key));
         printf("Exchange successful, begin chatting!\n");
     }
 

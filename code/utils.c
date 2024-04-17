@@ -67,7 +67,7 @@ int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
     return 0;
 }
 
-int perform_dh_exchange(int* fd, unsigned char* key)
+int perform_dh_exchange(int* fd, DES_cblock* key)
 {
     DH* dh = DH_new();
 
@@ -82,7 +82,15 @@ int perform_dh_exchange(int* fd, unsigned char* key)
     BIGNUM *bn_key = BN_new();
     if (BN_hex2bn(&bn_key, hex_key) == 0) return -1;
 
-    if (DH_compute_key((unsigned char*)key, bn_key, dh) == -1) return -1;
+    unsigned char* dh_key = malloc(sizeof(dh));
+
+    if (DH_compute_key(dh_key, bn_key, dh) == -1) return -1;
+
+    printf("Okay\n");
+
+    strncpy((char *)key, (char *)dh_key, sizeof(DES_cblock));
+
+    printf("Okay\n");
 
     DH_free(dh);
     BN_free(bn_key);
