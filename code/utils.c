@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #include <openssl/des.h>
 #include <openssl/err.h>
@@ -18,6 +19,8 @@
 
 #define MAX_DATA_SIZE 256
 #define KEY_FILE_NAME "des_key.bin"
+#define PRIME_NUMBER "957CB8DAA1CD6213167B663555A62B5206A8D94A0CBEB8942572B1D38171BB7F58776B35F562C7CFF72644C1685FD85A24C92DBDF105819E8008D3B35BB3DA328743A8F1E54B9541D3E0A7753B0C564F3E8D4E366D50D5F83A11985BE2D790035F5560E45E7EC9FB5FE7B26D371D270FFBC8E906A3D79CC9D243121B050AC12F"
+#define GENERATOR "02"
 
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -69,31 +72,37 @@ int DES_crypto(const char* str, char* enc_str, DES_cblock* key, int encrypt)
 
 int perform_dh_exchange(int* fd, DES_cblock* key)
 {
-    DH* dh = DH_new();
+    BIGNUM *p = BN_new();
+    BIGNUM *g = BN_new();
 
-    if (DH_generate_parameters_ex(dh, 1024, DH_GENERATOR_2, 0) != 1) return -1;
+    BN_hex2bn(&p, PRIME_NUMBER);
+    BN_hex2bn(&g, GENERATOR);
+
+    DH* dh = DH_new();
+    DH_set0_pqg(dh, p, 0, g);
+    if (DH_check_ex(dh) != 1) return -1;
+
     if (DH_generate_key(dh) != 1) return -1;
 
     char* hex_key = BN_bn2hex(DH_get0_pub_key(dh));
 
-    send(*fd, hex_key, sizeof(hex_key), 0);
-    recv(*fd, hex_key, sizeof(hex_key), 0);
+    send(*fd, hex_key, strlen(hex_key), 0);
+    recv(*fd, hex_key, strlen(hex_key), 0);
 
     BIGNUM *bn_key = BN_new();
     if (BN_hex2bn(&bn_key, hex_key) == 0) return -1;
-
-    unsigned char* dh_key = malloc(sizeof(dh));
+    
+    unsigned char* dh_key = malloc(DH_size(dh));
 
     if (DH_compute_key(dh_key, bn_key, dh) == -1) return -1;
-
-    printf("Okay\n");
+    BIO_dump_fp(stdout, dh_key, sizeof(dh_key));
 
     strncpy((char *)key, (char *)dh_key, sizeof(DES_cblock));
 
-    printf("Okay\n");
-
     DH_free(dh);
     BN_free(bn_key);
+    free(hex_key);
+    free(dh_key);
 
     return 0;
 }
@@ -126,7 +135,7 @@ void wait_send(int *fd, DES_cblock* key)
     }
 }
 
-void wait_recv(int *fd, DES_cblock* key)
+int wait_recv(int *fd, DES_cblock* key)
 {
     char recvbuf[MAX_DATA_SIZE];
     char recvbuf_dec[MAX_DATA_SIZE];
@@ -145,7 +154,7 @@ void wait_recv(int *fd, DES_cblock* key)
         {
             printf("Client disconnected, exiting...\n");
             close(*fd);
-            exit(0);
+            return 0;
         }
 
         if (DES_crypto(recvbuf, recvbuf_dec, key, DES_DECRYPT) != 0)

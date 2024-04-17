@@ -71,11 +71,11 @@ int main(int argc, char *argv[])
             printf("Could not perform key exchange\n");
             exit(-1);
         }
-        BIO_dump_fp(stdout, key, sizeof(key));
         printf("Exchange successful, begin chatting!\n");
     }
 
-    int pid = fork();
+    int result;
+    pid_t pid = fork();
 
     if (pid < 0)
     {
@@ -86,7 +86,11 @@ int main(int argc, char *argv[])
     if (pid == 0)
         wait_send(&fd, key);
     else
-        wait_recv(&fd, key);
+    {
+        result = wait_recv(&fd, key);
+        kill(pid, SIGTERM);
+    }
 
+    
     return 0;
 }

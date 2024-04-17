@@ -89,12 +89,16 @@ int main(int argc, char *argv[])
     {
         printf("Performing Diffie-Hellmann key exchange...\n");
 
-        perform_dh_exchange(&fd, key);
-        
-        BIO_dump_fp(stdout, key, sizeof(key));
+        if (perform_dh_exchange(&fd, key) != 0)
+        {
+            printf("Could not perform key exchange\n");
+            exit(-1);
+        }
+
         printf("Exchange successful, begin chatting!\n");
     }
-
+    
+    int result;
     pid_t pid = fork();
         
     if (pid < 0)
@@ -106,7 +110,10 @@ int main(int argc, char *argv[])
     if (pid == 0)
         wait_send(&fd, key);
     else
-        wait_recv(&fd, key);
+    {
+        result = wait_recv(&fd, key);
+        kill(pid, SIGTERM);
+    }
 
     return 0;
 }
