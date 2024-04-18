@@ -82,7 +82,11 @@ int main(int argc, char *argv[])
     }
     else if (mode == '1')
     {
-        read_key_from_file(key, KEY_FILE_NAME);
+        if (read_key_from_file(key, KEY_FILE_NAME) != 0)
+        {
+            printf("Could not read key from file, sorry\n");
+            exit(-1);
+        }
         printf("Key read from %s, begin chatting!\n", KEY_FILE_NAME);
     }
     else if (mode == '2')
@@ -97,7 +101,7 @@ int main(int argc, char *argv[])
 
         printf("Exchange successful, begin chatting!\n");
     }
-    
+
     int result;
     pid_t pid = fork();
         

@@ -34,15 +34,11 @@ void *get_in_addr(struct sockaddr *sa)
 int read_key_from_file(DES_cblock* key, const char* file_name)
 {
     FILE *key_file = fopen(file_name, "rb");
-    if (key_file == NULL)
-    {
-        printf("Couldn't read key from file\n");
-        return -1;
-    }
+    if (key_file == NULL) return -1;
+
     if (fread(key, sizeof(DES_cblock), 1, key_file) != 1)
     {
         fclose(key_file);
-        printf("Couldn't read key from file\n");
         return -1;
     }
     fclose(key_file);
