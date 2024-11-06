@@ -15,3 +15,6 @@ build_client:
 	mkdir -p ./build & $(CC) ./code/client.c -lcrypto -o ./build/client -Wno-deprecated-declarations
 clean_client:
 	rm -f ./build/client
+
+test:
+	mkdir -p ./build && $(CC) ./code/test.c -lcrypto -o ./build/test -Wno-deprecated-declarations && ./build/test
